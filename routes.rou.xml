@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<routes>
+    <!-- Define vehicle types -->
+    <vType id="car" accel="2.0" decel="4.5" sigma="0.5" length="5" maxSpeed="15" color="1,0,0"/>
+    <vType id="bus" accel="1.0" decel="3.0" sigma="0.5" length="12" maxSpeed="12" color="0,0,1"/>
+    <vType id="bike" accel="1.2" decel="3.0" sigma="0.5" length="2" maxSpeed="10" color="0,1,0"/>
+
+    <!-- Define routes -->
+    <route id="r1" edges="north_in south_out"/>
+    <route id="r2" edges="south_in north_out"/>
+    <route id="r3" edges="east_in west_out"/>
+    <route id="r4" edges="west_in east_out"/>
+
+    <!-- Define vehicle flows -->
+    <flow id="flow_cars" type="car" route="r1" begin="0" end="600" vehsPerHour="600"/>
+    <flow id="flow_buses" type="bus" route="r2" begin="0" end="600" vehsPerHour="300"/>
+    <flow id="flow_bikes" type="bike" route="r3" begin="0" end="600" vehsPerHour="400"/>
+</routes>

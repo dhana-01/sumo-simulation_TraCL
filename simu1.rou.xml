@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2025-10-30 12:43:05 by Eclipse SUMO netedit Version 1.24.0
+-->
+
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+    <!-- VTypes -->
+    <vType id="bike" length="2.00" maxSpeed="10.00" color="green" accel="1.2" decel="3.0" sigma="0.5"/>
+    <vType id="bus" length="12.00" maxSpeed="12.00" color="blue" accel="1.0" decel="3.0" sigma="0.5"/>
+    <vType id="car" length="5.00" maxSpeed="15.00" color="red" accel="2.0" decel="4.5" sigma="0.5"/>
+    <!-- Routes -->
+    <route id="r1" edges="north_in south_out"/>
+    <route id="r2" edges="south_in north_out"/>
+    <route id="r3" edges="east_in west_out"/>
+    <route id="r4" edges="west_in east_out"/>
+    <!-- Vehicles, persons and containers (sorted by depart) -->
+    <flow id="f_0" type="car" begin="0.00" color="199,79,199" from="E8" to="east_out" via="south_in" number="1800" vehsPerHour="400"/>
+    <flow id="f_1" type="car" begin="0.00" color="78,199,191" from="west_in" to="north_out" end="3600.00" number="1800"/>
+    <flow id="f_2" type="car" begin="0.00" color="208,244,241" from="E9" to="east_out" via="west_in" end="3600.00" number="500"/>
+    <flow id="f_3" type="bus" begin="0.00" color="163,254,246" from="E10" to="east_out" via="north_in" end="3600.00" number="1800"/>
+    <flow id="flow_bikes" type="bike" begin="0.00" route="r3" end="600.00" vehsPerHour="2000"/>
+    <flow id="flow_buses" type="bus" begin="0.00" route="r2" end="600.00" vehsPerHour="2000"/>
+    <flow id="flow_cars" type="car" begin="0.00" route="r1" end="600.00" vehsPerHour="2000"/>
+</routes>

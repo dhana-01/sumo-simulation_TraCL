@@ -1,0 +1,17 @@
+<additional>
+    <laneAreaDetector id="north_in_seg_1" lane="north_in_0" pos="0" length="100" freq="1" file="out.xml" />
+    <laneAreaDetector id="north_in_seg_2" lane="north_in_0" pos="100" length="100" freq="1" file="out.xml" />
+    <laneAreaDetector id="north_in_seg_3" lane="north_in_0" pos="200" length="102.26" freq="1" file="out.xml" />
+
+    <laneAreaDetector id="south_in_seg_1" lane="south_in_0" pos="0" length="100" freq="1" file="out.xml" />
+    <laneAreaDetector id="south_in_seg_2" lane="south_in_0" pos="100" length="100" freq="1" file="out.xml" />
+    <laneAreaDetector id="south_in_seg_3" lane="south_in_0" pos="200" length="102.79" freq="1" file="out.xml" />
+
+    <laneAreaDetector id="east_in_seg_1" lane="east_in_0" pos="0" length="100" freq="1" file="out.xml" />
+    <laneAreaDetector id="east_in_seg_2" lane="east_in_0" pos="100" length="92.46" freq="1" file="out.xml" />
+
+    <laneAreaDetector id="west_in_seg_1" lane="west_in_0" pos="0" length="100" freq="1" file="out.xml" />
+    <laneAreaDetector id="west_in_seg_2" lane="west_in_0" pos="100" length="100" freq="1" file="out.xml" />
+    <laneAreaDetector id="west_in_seg_3" lane="west_in_0" pos="200" length="103.29" freq="1" file="out.xml" />
+
+</additional>
