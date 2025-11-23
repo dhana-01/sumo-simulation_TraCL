@@ -1,6 +1,7 @@
 # Step 1: Add modules to provide access to specific libraries and functions
 import os
 import sys
+from typing import Dict, List, Tuple, Any
 
 # Step 2: Establish path to SUMO (SUMO_HOME)
 if 'SUMO_HOME' in os.environ:
@@ -35,12 +36,16 @@ step_count = 0
 # --- Variables adapted for your simu1.net.xml file ---
 APPROACH_EDGES = ["north_in", "south_in", "east_in", "west_in"]
 
-SEGMENT_MAP = {
-    "north_in": 3,  # 302.26m long
-    "south_in": 3,  # 302.79m long
-    "east_in":  2,  # 192.46m long
-    "west_in":  3   # 303.29m long
+# Define segment lengths for accurate calculations (from simu1.add.xml)
+# Format: edge_id: [length_seg_1, length_seg_2, ...]
+SEGMENT_LENGTHS: Dict[str, List[float]] = {
+    "north_in": [100.0, 100.0, 102.26],
+    "south_in": [100.0, 100.0, 102.79],
+    "east_in":  [100.0, 92.46],
+    "west_in":  [100.0, 100.0, 103.29]
 }
+
+SPEED_LIMIT = 13.89  # m/s (approx 50 km/h)
 
 # --- Time-based Loop Variables ---
 STEP_LENGTH = 0.1  # Must match your .sumocfg and Step 4
@@ -54,40 +59,105 @@ DATA_INTERVAL_STEPS = int(DATA_INTERVAL_SEC / STEP_LENGTH) # 30 / 0.1 = 300 step
 
 # Step 7: Define Functions
 
-def categorize_traffic(avg_speed):
+def categorize_traffic(avg_speed: float) -> str:
     """
     Categorizes the traffic state based on average speed.
-    (This function is from your sample script)
+    
+    Args:
+        avg_speed (float): The average speed in m/s.
+        
+    Returns:
+        str: The congestion level ('NORMAL', 'SLOW', 'TRAFFIC_JAM').
     """
-    # Approximate congestion thresholds (adjust to your scenario)
-    # Note: Your .net.xml file has a speed limit of 13.89 m/s
     if avg_speed >= 10:
         return "NORMAL"
     elif 5 <= avg_speed < 10:
         return "SLOW"
     else:
-        # This will also catch the '0' speed for TRAFFIC_JAM
         return "TRAFFIC_JAM"
 
-def get_segment_data(detector_id):
+def get_segment_data(detector_id: str) -> Tuple[int, float]:
     """
-    Gets the vehicle count and average speed for a single 100m segment.
+    Gets the vehicle count and average speed for a single lane area detector.
+    
+    Args:
+        detector_id (str): The ID of the lane area detector.
+        
+    Returns:
+        Tuple[int, float]: A tuple containing (vehicle_count, average_speed).
     """
     try:
-        # These are the TraCI calls that fetch data from your .add.xml file
         avg_speed = traci.lanearea.getLastStepMeanSpeed(detector_id)
         veh_count = traci.lanearea.getLastStepVehicleNumber(detector_id)
         
         # If no cars are on the detector, speed is -1.
         if veh_count == 0 or avg_speed < 0:
-            return 0, 0.0  # Return 0 vehicles and 0.0 speed
+            return 0, 0.0
             
         return veh_count, avg_speed
         
     except Exception as e: 
         print(f"Error in get_segment_data (detector '{detector_id}'): {e}")
-        print("  This likely means the detector ID is wrong or wasn't loaded.")
-        return 0, 0.0 # Return 0, 0 to avoid crashing
+        return 0, 0.0
+
+def calculate_route_metrics(edge_id: str, segment_lengths: List[float]) -> Dict[str, Any]:
+    """
+    Calculates aggregated metrics for a specific route (edge).
+    
+    Args:
+        edge_id (str): The edge ID (e.g., 'north_in').
+        segment_lengths (List[float]): List of lengths for each segment on this edge.
+        
+    Returns:
+        Dict[str, Any]: Dictionary containing route metrics.
+    """
+    total_vehicles = 0
+    total_travel_time = 0.0
+    total_distance = sum(segment_lengths)
+    weighted_speed_sum = 0.0
+    total_weight = 0.0
+    
+    num_segments = len(segment_lengths)
+    
+    for i in range(num_segments):
+        # Construct the detector ID, e.g., "north_in_seg_1"
+        # Note: range is 0-indexed, but segments are 1-indexed in XML
+        detector_id = f"{edge_id}_seg_{i + 1}"
+        length = segment_lengths[i]
+        
+        veh, speed = get_segment_data(detector_id)
+        
+        total_vehicles += veh
+        
+        # Calculate Travel Time for this segment
+        # If speed is 0 (jam), assume a very low speed (e.g., 0.1 m/s) to avoid division by zero
+        # or use a max travel time cap. Here we use 0.1 m/s as a proxy for crawling.
+        effective_speed = max(speed, 0.1)
+        segment_travel_time = length / effective_speed
+        total_travel_time += segment_travel_time
+        
+        # Weighted Average Speed Calculation
+        # We weight by segment length to get a representative speed for the whole route
+        weighted_speed_sum += speed * length
+        total_weight += length
+
+    avg_route_speed = weighted_speed_sum / total_weight if total_weight > 0 else 0.0
+    
+    # Calculate Delay
+    # Free flow time = Distance / Speed Limit
+    free_flow_time = total_distance / SPEED_LIMIT
+    delay = max(0.0, total_travel_time - free_flow_time)
+    
+    congestion_level = categorize_traffic(avg_route_speed)
+    
+    return {
+        "edge": edge_id,
+        "vehicle_count": total_vehicles,
+        "avg_speed": avg_route_speed,
+        "travel_time": total_travel_time,
+        "delay": delay,
+        "congestion": congestion_level
+    }
 
 # Step 8: Take simulation steps for exactly 5 minutes
 print(f"Simulation starting... Running for {TOTAL_SIMULATION_TIME_SEC} seconds ({TOTAL_STEPS} steps).")
@@ -99,32 +169,25 @@ try:
         traci.simulationStep()
         step_count += 1
         
-        # Check if it's time to print data (every 300 steps = 30 seconds)
+        # Check if it's time to print data
         if step_count % DATA_INTERVAL_STEPS == 0 and step_count > 0:
             
             current_time = step_count * STEP_LENGTH
             print(f"--- Simulation Time: {current_time:.1f}s ---")
+            print(f"{'ROUTE':<10} | {'STATUS':<12} | {'VEHICLES':<8} | {'SPEED (m/s)':<12} | {'TIME (s)':<10} | {'DELAY (s)':<10}")
+            print("-" * 80)
             
             for edge in APPROACH_EDGES:
                 try: 
-                    polyline_output = []
-                    num_segments = SEGMENT_MAP[edge]
+                    lengths = SEGMENT_LENGTHS[edge]
+                    metrics = calculate_route_metrics(edge, lengths)
                     
-                    for i in range(1, num_segments + 1):
-                        # Construct the detector ID, e.g., "north_in_seg_1"
-                        detector_id = f"{edge}_seg_{i}"
-                        
-                        # Get the data from the 100m detector
-                        veh, speed = get_segment_data(detector_id)
-                        
-                        # Use your function to get the traffic state
-                        state = categorize_traffic(speed)
-                        
-                        polyline_output.append(f"Seg{i}: {state} ({veh} veh, {speed:.2f} m/s)")
-                    
-                    print(f"Edge: {edge.upper()}")
-                    print("  | ".join(polyline_output))
-                    print("-" * 20)
+                    print(f"{metrics['edge']:<10} | "
+                          f"{metrics['congestion']:<12} | "
+                          f"{metrics['vehicle_count']:<8} | "
+                          f"{metrics['avg_speed']:<12.2f} | "
+                          f"{metrics['travel_time']:<10.1f} | "
+                          f"{metrics['delay']:<10.1f}")
                     
                 except Exception as e: 
                     print(f"CRITICAL Error processing edge '{edge}': {e}")
