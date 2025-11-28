@@ -14,11 +14,16 @@ This project implements a traffic simulation using [SUMO (Simulation of Urban MO
 
 ## Prerequisites
 
-*   **Python 3.x**
+*   **Python 3.8+**
 *   **SUMO**: Ensure SUMO is installed and the `SUMO_HOME` environment variable is set.
-*   **Python Dependencies**:
+*   **uv**: Install uv package manager:
+    ```powershell
+    # Windows (PowerShell)
+    powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+    ```
     ```bash
-    pip install traci fastapi uvicorn
+    # macOS/Linux
+    curl -LsSf https://astral.sh/uv/install.sh | sh
     ```
 
 ## Installation
@@ -31,22 +36,41 @@ This project implements a traffic simulation using [SUMO (Simulation of Urban MO
     ```bash
     cd SUMO_Traffic_Simulation
     ```
+3.  **First-time setup** - Create virtual environment and install dependencies:
+    ```bash
+    uv sync
+    ```
+    This creates a `.venv/` directory and installs all dependencies from `uv.lock`.
 
 ## Usage
 
 ### 1. Running the Traffic Monitor
 To run the standalone monitoring script:
 ```bash
-python traffic_monitor.py
+uv run python traffic_monitor.py
 ```
 
 ### 2. Running the API Server
 To start the FastAPI server:
 ```bash
-python sumo_api_server.py
+uv run uvicorn sumo_api_server:app --host 127.0.0.1 --port 8000
+```
+Or alternatively:
+```bash
+uv run python sumo_api_server.py
 ```
 *   The server will start at `http://127.0.0.1:8000`.
 *   Interactive API documentation (Swagger UI) is available at `http://127.0.0.1:8000/docs`.
+
+### 3. Managing Dependencies
+To add a new dependency:
+```bash
+uv add <package-name>
+```
+To update dependencies:
+```bash
+uv sync
+```
 
 ### API Endpoints
 *   `GET /`: Server status.
